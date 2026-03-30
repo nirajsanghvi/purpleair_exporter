@@ -152,25 +152,25 @@ def transform_sensor_data(data):
     sensor_label = data.get("name", "")
 
     for key, stat in SENSOR_MAP.items():
-        if key in data:
+        if key in data and data[key] is not None:
             stat.labels(sensor_id = sensor_id, label = sensor_label).set(data[key])
 
     # Calculate AQI for PM2.5, PM2.5_10minute, and PM10
-    if "pm2.5" in data:
+    if "pm2.5" in data and data["pm2.5"] is not None:
         aqi = aqiFromPM(float(data["pm2.5"]))
         Aqi2_5.labels(sensor_id = sensor_id, label = sensor_label, conversion="None").set(aqi)
 
         aqi = aqiFromPM(aqandu(float(data["pm2.5"])))
         Aqi2_5.labels(sensor_id = sensor_id, label = sensor_label, conversion="AQandU").set(aqi)
 
-    if "pm2.5_10minute" in data:
+    if "pm2.5_10minute" in data and data["pm2.5_10minute"] is not None:
         aqi = aqiFromPM(float(data["pm2.5_10minute"]))
         Aqi2_5_10Minute.labels(sensor_id = sensor_id, label = sensor_label, conversion="None").set(aqi)
 
         aqi = aqiFromPM(aqandu(float(data["pm2.5_10minute"])))
         Aqi2_5_10Minute.labels(sensor_id = sensor_id, label = sensor_label, conversion="AQandU").set(aqi)
 
-    if "pm10.0" in data:
+    if "pm10.0" in data and data["pm10.0"] is not None:
         aqi = aqiFromPM(float(data["pm10.0"]))
         Aqi10.labels(sensor_id = sensor_id, label = sensor_label, conversion="None").set(aqi)
 
