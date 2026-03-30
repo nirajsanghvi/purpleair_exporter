@@ -65,8 +65,6 @@ def main() -> None:
         logger.error("Missing env var: PAE_API_READ_KEY")
         sys.exit(1)
 
-    validate_api_key(api_key)
-
     sensor_ids = os.environ["PAE_SENSOR_IDS"].replace(" ", "")
 
     log_level = getattr(logging, log_level.upper())
@@ -74,7 +72,12 @@ def main() -> None:
 
     start_http_server(int(prom_port))
 
+    api_key_validated = False
     for _ in Ticker(run_interval_s).run():
+        if not api_key_validated:
+            api_key_validated = validate_api_key(api_key)
+            if not api_key_validated:
+                continue
         collect_metrics(sensor_ids, api_key)
 
 
@@ -183,12 +186,16 @@ def transform_sensor_data(data):
         Aqi10.labels(sensor_id = sensor_id, label = sensor_label, conversion="AQandU").set(aqi)
 
 
-def validate_api_key(api_key: str) -> None:
+def validate_api_key(api_key: str) -> bool:
     logger.info("Validating API read key")
     url = f"{V1_API_ENDPOINT}/keys"
     headers = {"X-API-Key": api_key}
 
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers)
+    except requests.exceptions.ConnectionError as e:
+        logger.warning(f"Connection error validating API key, will retry next cycle: {e}")
+        return False
 
     # For some reason the API returns 201 instead of 200 on a key check, so just look for both status codes to indicate success
     if response.status_code != 200 and response.status_code != 201:
@@ -207,6 +214,8 @@ def validate_api_key(api_key: str) -> None:
         logger.error(f"The given API key: {api_key} was not a read key, it was a {key_type} key. \
                      Make sure you are providing a read key generated from https://develop.purpleair.com/keys")
         sys.exit(1)
+
+    return True
 
 
 # Convert US AQI from raw pm2.5 data
