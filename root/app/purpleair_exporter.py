@@ -150,7 +150,7 @@ def api_get_sensors(sensor_ids, api_key):
 
         return data
     else:
-        print(f"Error fetching data for sensors: {response.status_code}")
+        logger.error(f"Error fetching data for sensors: {response.status_code}")
         FetchErrors.inc()
         return None
 
