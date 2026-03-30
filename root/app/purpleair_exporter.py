@@ -188,11 +188,7 @@ def validate_api_key(api_key: str) -> None:
     url = f"{V1_API_ENDPOINT}/keys"
     headers = {"X-API-Key": api_key}
 
-    try:
-        response = requests.get(url, headers=headers)
-    except requests.exceptions.ConnectionError as e:
-        logger.warning(f"Connection error validating API key (will retry on next cycle): {e}")
-        return
+    response = requests.get(url, headers=headers)
 
     # For some reason the API returns 201 instead of 200 on a key check, so just look for both status codes to indicate success
     if response.status_code != 200 and response.status_code != 201:
