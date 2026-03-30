@@ -104,7 +104,12 @@ def api_get_sensors(sensor_ids, api_key):
         "show_only": sensor_ids
     }
 
-    response = requests.get(url, params=params, headers=headers)
+    try:
+        response = requests.get(url, params=params, headers=headers)
+    except requests.exceptions.ConnectionError as e:
+        logger.warning(f"Connection error fetching sensor data: {e}")
+        FetchErrors.inc()
+        return None
 
     logger.debug(f"API response: {response.status_code}; {response.text}")
 
@@ -183,14 +188,18 @@ def validate_api_key(api_key: str) -> None:
     url = f"{V1_API_ENDPOINT}/keys"
     headers = {"X-API-Key": api_key}
 
-    response = requests.get(url, headers=headers)
+    try:
+        response = requests.get(url, headers=headers)
+    except requests.exceptions.ConnectionError as e:
+        logger.warning(f"Connection error validating API key (will retry on next cycle): {e}")
+        return
 
     # For some reason the API returns 201 instead of 200 on a key check, so just look for both status codes to indicate success
     if response.status_code != 200 and response.status_code != 201:
         logger.error(f"Invalid API key: {api_key}. \
                      Make sure you are providing a read key generated from https://develop.purpleair.com/keys")
         sys.exit(1)
-    
+
     try:
         response_json = response.json()
     except requests.exceptions.JSONDecodeError:
